@@ -1,0 +1,51 @@
+{
+  "name": "Schulbus Wiliberg",
+  "short_name": "Schulbus Wiliberg",
+  "description": "Schulbus-Portal der Gemeinde Wiliberg – Fahrplan, Krankmeldungen und KI-gestützte Auswertung der Schulpläne.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#0a5ea8",
+  "lang": "de-CH",
+  "categories": ["education", "utilities", "government"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/wappen.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Mein Dashboard",
+      "short_name": "Dashboard",
+      "url": "/dashboard"
+    },
+    {
+      "name": "Fahrplan",
+      "short_name": "Fahrplan",
+      "url": "/"
+    }
+  ]
+}
