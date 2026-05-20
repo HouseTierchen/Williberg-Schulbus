@@ -8,6 +8,7 @@ import {
   MODE_LABELS,
   SLOTS,
   SLOT_LABELS,
+  getAllStopNames,
   type Mode,
   type Slot,
 } from "@/lib/transport";
@@ -36,11 +37,20 @@ export default async function NeedsPage({
     orderBy: { firstName: "asc" },
   });
 
+  const stopNames = await getAllStopNames();
+  const routes = await prisma.busRoute.findMany({
+    where: { active: true },
+    include: {
+      stops: { orderBy: { orderIdx: "asc" } },
+      trips: { orderBy: [{ dayOfWeek: "asc" }, { departureAt: "asc" }] },
+    },
+  });
+
   const needMap = new Map<string, (typeof child.needs)[number]>();
   for (const n of child.needs) needMap.set(`${n.dayOfWeek}-${n.slot}`, n);
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-10">
+    <div className="mx-auto max-w-5xl px-4 py-10">
       <h1 className="h-title mb-1">Transport-Bedarf</h1>
       <p className="mb-6 text-sm text-wili-ink/70">
         {child.firstName} {child.lastName} · {child.school} · Klasse{" "}
@@ -51,6 +61,43 @@ export default async function NeedsPage({
         <div className="mb-4 rounded border border-green-300 bg-green-50 p-2 text-sm text-green-800">
           Bedarf gespeichert.
         </div>
+      )}
+
+      {routes.length > 0 && (
+        <details className="card mb-4">
+          <summary className="cursor-pointer font-semibold text-wili-bluedark">
+            Verfügbare Linien & Haltestellen anzeigen
+          </summary>
+          <div className="mt-3 grid gap-4 md:grid-cols-2">
+            {routes.map((r) => (
+              <div key={r.id} className="text-sm">
+                <div className="font-semibold text-wili-bluedark">{r.name}</div>
+                {r.description && (
+                  <div className="text-xs text-wili-ink/70">
+                    {r.description}
+                  </div>
+                )}
+                <div className="mt-1">
+                  <span className="text-wili-ink/60">Haltestellen: </span>
+                  {r.stops
+                    .map((st) => `${st.name} (${st.arriveAt})`)
+                    .join(" → ")}
+                </div>
+                {r.trips.length > 0 && (
+                  <div className="mt-1">
+                    <span className="text-wili-ink/60">Fahrten: </span>
+                    {r.trips
+                      .map(
+                        (t) =>
+                          `${["So","Mo","Di","Mi","Do","Fr","Sa"][t.dayOfWeek]} ${t.departureAt} ${t.direction === "HIN" ? "↗" : "↘"}`
+                      )
+                      .join(" · ")}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </details>
       )}
 
       {siblings.length > 0 && (
@@ -81,10 +128,17 @@ export default async function NeedsPage({
         className="card"
       >
         <p className="mb-4 text-sm text-wili-ink/70">
-          Tragen Sie pro Tag und Slot ein, ob Ihr Kind den Schulbus braucht. Bei{" "}
-          <em>Sonderzeit</em> (z.B. Instrumentalunterricht) können Sie eine
-          abweichende Uhrzeit eintragen.
+          Bitte tragen Sie pro Tag und Slot ein, ob Ihr Kind den Bus nutzt und{" "}
+          <strong>wo</strong> es ein- bzw. aussteigt. Die Haltestellen-Liste
+          wird vom Gemeinderat gepflegt. Bei <em>Sonderzeit</em> (z.B.
+          Instrumentalunterricht) tragen Sie die abweichende Uhrzeit ein.
         </p>
+
+        <datalist id="stop-options">
+          {stopNames.map((n) => (
+            <option key={n} value={n} />
+          ))}
+        </datalist>
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -113,7 +167,10 @@ export default async function NeedsPage({
                           slot={slot}
                           mode={(existing?.mode as Mode) ?? "BUS"}
                           customTime={existing?.customTime ?? ""}
-                          customStop={existing?.customStop ?? ""}
+                          customStop={
+                            existing?.customStop ?? child.stopName ?? ""
+                          }
+                          defaultStop={child.stopName ?? ""}
                         />
                       </td>
                     );
@@ -143,12 +200,14 @@ function SlotCell({
   mode,
   customTime,
   customStop,
+  defaultStop,
 }: {
   dayOfWeek: number;
   slot: Slot;
   mode: Mode;
   customTime: string;
   customStop: string;
+  defaultStop: string;
 }) {
   const base = `n_${dayOfWeek}_${slot}`;
   return (
@@ -165,15 +224,16 @@ function SlotCell({
         ))}
       </select>
       <input
-        name={`${base}_time`}
-        defaultValue={customTime}
-        placeholder="HH:MM"
+        name={`${base}_stop`}
+        defaultValue={customStop}
+        list="stop-options"
+        placeholder={defaultStop || "Haltestelle"}
         className="input mt-1 py-1 text-xs"
       />
       <input
-        name={`${base}_stop`}
-        defaultValue={customStop}
-        placeholder="Haltestelle"
+        name={`${base}_time`}
+        defaultValue={customTime}
+        placeholder="HH:MM (Sonderzeit)"
         className="input mt-1 py-1 text-xs"
       />
     </div>

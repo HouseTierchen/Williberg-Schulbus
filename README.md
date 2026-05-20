@@ -1,40 +1,50 @@
 # Schulbus Wiliberg
 
-Schulbus-Portal der Gemeinde Wiliberg (AG) – als **installierbare Progressive Web App** (PWA) für Eltern und Gemeinderat.
+Schulbus-Portal der Gemeinde Wiliberg (AG) als **installierbare Progressive Web App** (PWA) für Eltern und Gemeinderat. Designt mit dem Ziel, Petra Grädel-Fretz (Vizeammann, Ressort Bildung) und Frey Reisen die manuelle Planung weitestgehend abzunehmen.
 
-- **KI-Auswertung** von Schulplänen / Stundenplänen (Claude über Anthropic SDK)
-- **Eltern-Dashboard**: Familien-Registrierung, Kinder einpflegen, Krankmeldungen
-- **Admin-Dashboard** für den Gemeinderat: Fahrplan, Linien, Haltestellen, Familienübersicht, Tages-Abmeldungen
-- **Installierbar** auf jedem Handy (Android/iOS) und Desktop – mit Service Worker und Offline-Fallback
-- Optik orientiert sich am Wappen Wiliberg (Weiss/Blau, mit grüner Rebe und goldenem Mühlrad) und dem Slogan **„Eifach schön!"**
+> 🚀 **Du willst die App live schalten?** → siehe [`DEPLOY.md`](./DEPLOY.md) für eine 15-Minuten-Anleitung auf Vercel + Neon (gratis).
 
 ## Highlights
 
-- **Push-Benachrichtigungen** (Web-Push / PWA): Eltern & Gemeinderat aktivieren Benachrichtigungen mit einem Klick. Trigger: Krankmeldungen → an Admin, neue Spezialwoche → an alle Eltern.
-- **„Heute krank" Schnellbutton** auf jedem Kind im Dashboard – ein Klick → Eintrag + Push an Admin.
-- **PDF/Bild-Upload für Stundenpläne**: Schulplan einfach hochladen, Claude liest direkt aus (Document- bzw. Vision-Modus).
-- **Geschwister-Kopie**: Bedarf eines Geschwisters in einem Klick übernehmen.
+- **KI-Auswertung** der Schulpläne — Stundenplan als **PDF oder Foto** hochladen, Claude liest Unterrichtszeiten aus und schlägt Bus-Fahrzeiten vor.
+- **Eltern-Dashboard** pro Familie:
+  - Kinder einpflegen
+  - Wochen-Bedarf pro Tag und Slot (morgens hin, mittags rück, nachmittags rück) mit Haltestellen-Auswahl aus admin-gepflegter Liste
+  - „Heute krank" Schnellbutton (1 Klick + automatische Benachrichtigung)
+  - Krankmeldung / Abmeldung über Zeitraum
+  - Geschwister-Kopie: Bedarf eines Geschwisters in einem Klick übernehmen
+- **Admin (Gemeinderat) Dashboard**:
+  - Tagesplan, der Wochen-Bedarf, Spezialwochen, Ferien und Abmeldungen kombiniert
+  - **Wochenliste / CSV-Export** für Frey Reisen (druckbar, fertig)
+  - Lücken-Anzeige: welche Kinder haben keinen Bedarf gepflegt
+  - Spezialwochen (Projekt-/Sportwochen) mit kindbezogenen Overrides
+  - Schulferien / schulfreie Tage
+  - Fahrplan-Verwaltung (Linien, Haltestellen, Fahrten)
+  - Sammelmitteilungen an alle Eltern mit Push-Versand
+- **Push-Benachrichtigungen** (Web-Push / PWA) — Eltern bekommen automatisch Info bei Spezialwochen, Admins bei Krankmeldungen.
+- **Installierbar** auf Handy/Desktop (Android/iOS/Win/Mac/Linux) mit Wappen-Icon und Offline-Fallback.
+- **Datensparsam** — App-Shell wird einmal geladen, danach aus Cache; keine externen Fonts/Tracker/CDNs. Geeignet für günstige Mobile-Tarife.
+- **Design** orientiert am Wappen Wiliberg (Weiss/Blau, grüne Rebe, goldenes Mühlrad) und Slogan „Eifach schön!".
 
 ## Stack
 
-- Next.js 15 (App Router, TypeScript)
-- Tailwind CSS
-- Prisma + SQLite (für Produktion einfach auf Postgres umstellbar)
-- JWT-Cookies (jose) + bcrypt
-- Anthropic SDK (`@anthropic-ai/sdk`)
-- PWA: Web-Manifest + Service Worker + Wappen-Icons
+- Next.js 15 (App Router, TypeScript) + Tailwind CSS
+- Prisma (SQLite lokal, Postgres in Produktion)
+- JWT-Cookies (`jose`) + bcrypt
+- `@anthropic-ai/sdk` (Claude, mit PDF-/Vision-Support)
+- `web-push` für Browser-Benachrichtigungen
+- PWA: Manifest + Service Worker + automatisch generierte Wappen-Icons
 
-## Setup
+## Schnellstart lokal
 
 ```bash
-cp .env.example .env        # Werte eintragen (AUTH_SECRET, ANTHROPIC_API_KEY)
+cp .env.example .env       # Werte eintragen (s.u.)
 npm install
-npm run db:push             # SQLite-Datenbank anlegen
-npm run db:seed             # Admin anlegen: admin@wiliberg.ch / wiliberg-admin
-npm run dev
+node scripts/gen-vapid.mjs # einmalig: VAPID-Keys, in .env eintragen
+npm run db:push
+npm run db:seed            # Admin: admin@wiliberg.ch / wiliberg-admin
+npm run dev                # http://localhost:3000
 ```
-
-App läuft unter http://localhost:3000.
 
 ### Wichtige .env-Variablen
 
@@ -46,40 +56,28 @@ App läuft unter http://localhost:3000.
 | `ADMIN_REGISTRATION_CODE` | Code, mit dem sich ein Gemeinderats-Mitglied selbst als Admin registrieren kann |
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | Web-Push (Browser-Notifications). Mit `node scripts/gen-vapid.mjs` einmalig erzeugen. |
 
-## Bedienung
+## Workflow für Petra (Gemeinderat)
 
-### Eltern
-1. **Familie registrieren** → ein Konto pro Familie
-2. **Kind hinzufügen** (Schule, Klasse, bevorzugte Haltestelle)
-3. **Krankmeldung / Abmeldung** mit Zeitraum und Grund erfassen
-4. **Fahrplan** auf der Startseite sichtbar
+1. **Einmalig**: Fahrplan-Linien und Haltestellen anlegen, Schulferien eintragen
+2. **Pro Semester**: Stundenplan-PDF hochladen → KI extrahiert Zeiten
+3. **Eltern erfassen Bedarf selbst** – Petra sieht im Dashboard, wer noch offen ist
+4. **Krankmeldungen** kommen automatisch rein (Push-Notification)
+5. **Wochenliste / CSV** für Frey Reisen exportieren statt manuell zusammenstellen
+6. **Spezialwochen/Projektwochen**: Aktivieren → alle Eltern werden per Push informiert, Overrides pflegen
+7. **Sammelmitteilungen** (z.B. „Bus verspätet") an alle Eltern mit einem Klick
 
-### Admin (Gemeinderat)
-1. Anmeldung als Admin (Seed: `admin@wiliberg.ch` / `wiliberg-admin`)
-2. **Schulpläne** anlegen – Text einfügen → KI-Analyse → Vorschläge für Bus-Fahrten
-3. **Fahrplan** verwalten: Linien, Haltestellen, Fahrten (Mo–Fr, Hin/Rück)
-4. **Familien** & **Tages-Abmeldungen** einsehen
+## Datensparsamkeit
 
-### KI-Auswertung
-Der Stundenplan-Text wird an Claude geschickt. Die KI gibt zurück:
-- Zusammenfassung
-- Strukturierte Unterrichtszeiten (Klasse · Tag · Start/Ende)
-- Empfohlene Bus-Fahrzeiten (ca. 20 Min. vor Unterrichtsbeginn / 10 Min. nach Unterrichtsende)
+Die App ist explizit auf geringen Datenverbrauch ausgelegt:
+- App-Shell wird beim ersten Besuch gecacht, danach offline verfügbar
+- Service Worker mit Stale-While-Revalidate-Strategie
+- Keine externen Schriften, keine Tracker, kein CDN-Loading
+- Wappen und Icons als optimierte SVG/PNG
 
-## PWA / Installation
+Typischer Datenverbrauch eines Schulbushandys (z.B. Frey-Reisen-Fahrzeug): **< 1 MB pro Tag** nach Erstinstallation. Empfohlener Tarif auf Swisscom-Netz: **Wingo Swiss Mini** (CHF 13.95/Mt., 5 GB).
 
-- Web-Manifest: `/manifest.webmanifest`
-- Service Worker: `/sw.js` (App-Shell-Cache mit Offline-Fallback)
-- Icons werden beim Build aus `public/wappen.svg` generiert (Skript `scripts/gen-icons.mjs`)
-- Im Browser erscheint automatisch ein **„Installieren"-Banner** (Android/Chrome/Edge). Unter iOS Safari: *Teilen → Zum Home-Bildschirm hinzufügen*
+## Lizenz / Auftraggeber
 
-## Hinweise zur Produktion
-
-- `DATABASE_URL` auf Postgres umstellen (z.B. `postgresql://…`) und `provider` in `prisma/schema.prisma` anpassen
-- Hosting: Vercel, Render, eigener Node-Server – HTTPS ist Pflicht für PWA-Installation und Service Worker
-- Backups der DB regelmässig sichern
-- `AUTH_SECRET` und `ADMIN_REGISTRATION_CODE` rotieren
-
----
+Im Auftrag der Einwohnergemeinde Wiliberg.
 
 © Einwohnergemeinde Wiliberg · Eifach schön!

@@ -1,13 +1,26 @@
 // Schulbus Wiliberg - Service Worker
-// Strategie: App-Shell (statisch) cachen, GET-Navigationsanfragen mit
-// Netz-zuerst + Offline-Fallback, Auth/POST nie cachen.
+// Datensparsam: aggressives Caching der App-Shell, Stale-while-revalidate
+// fuer Navigation, Cache-first fuer Assets. Keine externen Ressourcen.
 
-const CACHE = "schulbus-wiliberg-v1";
-const APP_SHELL = ["/", "/offline", "/wappen.svg", "/manifest.webmanifest"];
+const CACHE = "schulbus-wiliberg-v2";
+const APP_SHELL = [
+  "/",
+  "/offline",
+  "/login",
+  "/register",
+  "/dashboard",
+  "/wappen.svg",
+  "/manifest.webmanifest",
+  "/icons/icon-192.png",
+  "/icons/icon-512.png",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE).then((c) => c.addAll(APP_SHELL)).catch(() => {})
+    caches
+      .open(CACHE)
+      .then((c) => Promise.allSettled(APP_SHELL.map((u) => c.add(u))))
+      .catch(() => {})
   );
   self.skipWaiting();
 });
@@ -26,37 +39,38 @@ self.addEventListener("fetch", (event) => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
-  // API-Aufrufe nicht cachen
-  if (url.pathname.startsWith("/api/")) return;
+  if (url.pathname.startsWith("/api/")) return; // API immer live
 
+  // Navigation: stale-while-revalidate – sofort aus Cache, im Hintergrund neu
   if (req.mode === "navigate") {
     event.respondWith(
-      fetch(req)
-        .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
-          return res;
-        })
-        .catch(() =>
-          caches.match(req).then((c) => c || caches.match("/offline"))
-        )
+      caches.open(CACHE).then(async (cache) => {
+        const cached = await cache.match(req);
+        const network = fetch(req)
+          .then((res) => {
+            if (res.ok) cache.put(req, res.clone());
+            return res;
+          })
+          .catch(() => cached || cache.match("/offline"));
+        return cached || network;
+      })
     );
     return;
   }
 
-  // statische Assets: cache-first
+  // statische Assets / Icons / SVG: cache-first
   event.respondWith(
-    caches.match(req).then(
-      (cached) =>
-        cached ||
-        fetch(req)
-          .then((res) => {
-            const copy = res.clone();
-            caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
-            return res;
-          })
-          .catch(() => cached)
-    )
+    caches.open(CACHE).then(async (cache) => {
+      const cached = await cache.match(req);
+      if (cached) return cached;
+      try {
+        const res = await fetch(req);
+        if (res.ok && res.type === "basic") cache.put(req, res.clone());
+        return res;
+      } catch {
+        return cached || new Response("", { status: 504 });
+      }
+    })
   );
 });
 

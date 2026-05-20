@@ -4,13 +4,20 @@ import { prisma } from "@/lib/db";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const routes = await prisma.busRoute.findMany({
-    where: { active: true },
-    include: {
-      stops: { orderBy: { orderIdx: "asc" } },
-      trips: { orderBy: [{ dayOfWeek: "asc" }, { departureAt: "asc" }] },
-    },
-  });
+  const [routes, announcements] = await Promise.all([
+    prisma.busRoute.findMany({
+      where: { active: true },
+      include: {
+        stops: { orderBy: { orderIdx: "asc" } },
+        trips: { orderBy: [{ dayOfWeek: "asc" }, { departureAt: "asc" }] },
+      },
+    }),
+    prisma.announcement.findMany({
+      where: { active: true },
+      orderBy: { createdAt: "desc" },
+      take: 3,
+    }),
+  ]);
 
   return (
     <div>
@@ -47,6 +54,28 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      {announcements.length > 0 && (
+        <section className="mx-auto max-w-6xl px-4 pt-8">
+          <h2 className="h-title mb-3">Aktuelle Mitteilungen</h2>
+          <div className="grid gap-3">
+            {announcements.map((a) => (
+              <div
+                key={a.id}
+                className="card border-l-4 border-l-wili-blue"
+              >
+                <div className="font-semibold text-wili-bluedark">
+                  {a.title}
+                </div>
+                <p className="mt-1 whitespace-pre-wrap text-sm">{a.body}</p>
+                <p className="mt-2 text-xs text-wili-ink/60">
+                  {new Date(a.createdAt).toLocaleString("de-CH")}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Fahrplan */}
       <section className="mx-auto max-w-6xl px-4 py-12">

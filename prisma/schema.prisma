@@ -3,6 +3,7 @@ generator client {
 }
 
 datasource db {
+  // Wechsel auf postgresql fuer Produktion (siehe DEPLOY.md)
   provider = "sqlite"
   url      = env("DATABASE_URL")
 }
@@ -106,6 +107,17 @@ model SchoolHoliday {
   toDate    DateTime
   notes     String?
   createdAt DateTime @default(now())
+}
+
+// Sammelmitteilung des Gemeinderats an alle Eltern.
+model Announcement {
+  id         String   @id @default(cuid())
+  title      String
+  body       String
+  active     Boolean  @default(true)
+  pushSent   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  createdBy  String?
 }
 
 model Absence {

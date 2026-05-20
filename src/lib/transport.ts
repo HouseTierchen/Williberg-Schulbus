@@ -118,3 +118,18 @@ export async function isSchoolHoliday(date: Date) {
     },
   });
 }
+
+// Alle vom Gemeinderat gepflegten Haltestellen-Namen (eindeutig, sortiert).
+export async function getAllStopNames(): Promise<string[]> {
+  const stops = await prisma.busStop.findMany({
+    where: { route: { active: true } },
+    select: { name: true },
+    orderBy: { name: "asc" },
+  });
+  const set = new Set<string>();
+  for (const s of stops) {
+    const n = s.name.trim();
+    if (n) set.add(n);
+  }
+  return Array.from(set);
+}
