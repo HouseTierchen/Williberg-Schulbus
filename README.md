@@ -8,6 +8,13 @@ Schulbus-Portal der Gemeinde Wiliberg (AG) – als **installierbare Progressive 
 - **Installierbar** auf jedem Handy (Android/iOS) und Desktop – mit Service Worker und Offline-Fallback
 - Optik orientiert sich am Wappen Wiliberg (Weiss/Blau, mit grüner Rebe und goldenem Mühlrad) und dem Slogan **„Eifach schön!"**
 
+## Highlights
+
+- **Push-Benachrichtigungen** (Web-Push / PWA): Eltern & Gemeinderat aktivieren Benachrichtigungen mit einem Klick. Trigger: Krankmeldungen → an Admin, neue Spezialwoche → an alle Eltern.
+- **„Heute krank" Schnellbutton** auf jedem Kind im Dashboard – ein Klick → Eintrag + Push an Admin.
+- **PDF/Bild-Upload für Stundenpläne**: Schulplan einfach hochladen, Claude liest direkt aus (Document- bzw. Vision-Modus).
+- **Geschwister-Kopie**: Bedarf eines Geschwisters in einem Klick übernehmen.
+
 ## Stack
 
 - Next.js 15 (App Router, TypeScript)
@@ -37,6 +44,7 @@ App läuft unter http://localhost:3000.
 | `AUTH_SECRET` | Geheimer Schlüssel für Session-JWT (mind. 32 Zeichen) |
 | `ANTHROPIC_API_KEY` | API-Key für die KI-Auswertung der Schulpläne |
 | `ADMIN_REGISTRATION_CODE` | Code, mit dem sich ein Gemeinderats-Mitglied selbst als Admin registrieren kann |
+| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | Web-Push (Browser-Notifications). Mit `node scripts/gen-vapid.mjs` einmalig erzeugen. |
 
 ## Bedienung
 

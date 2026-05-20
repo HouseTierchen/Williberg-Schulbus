@@ -31,6 +31,11 @@ export default async function NeedsPage({
   });
   if (!child) notFound();
 
+  const siblings = await prisma.child.findMany({
+    where: { parentId: s.sub, id: { not: child.id } },
+    orderBy: { firstName: "asc" },
+  });
+
   const needMap = new Map<string, (typeof child.needs)[number]>();
   for (const n of child.needs) needMap.set(`${n.dayOfWeek}-${n.slot}`, n);
 
@@ -46,6 +51,28 @@ export default async function NeedsPage({
         <div className="mb-4 rounded border border-green-300 bg-green-50 p-2 text-sm text-green-800">
           Bedarf gespeichert.
         </div>
+      )}
+
+      {siblings.length > 0 && (
+        <form
+          action={`/api/children/${child.id}/needs/copy-from`}
+          method="post"
+          className="card mb-4 flex items-end gap-3"
+        >
+          <div className="flex-1">
+            <label className="label">Bedarf von Geschwister übernehmen</label>
+            <select name="from" required className="input">
+              {siblings.map((sib) => (
+                <option key={sib.id} value={sib.id}>
+                  {sib.firstName} {sib.lastName}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button className="btn-secondary py-1.5 px-3 text-sm">
+            Übernehmen
+          </button>
+        </form>
       )}
 
       <form

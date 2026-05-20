@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { PushOptIn } from "@/components/PushOptIn";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,10 @@ export default async function Dashboard() {
         <Link href="/dashboard/children/new" className="btn-primary">
           Kind hinzufügen
         </Link>
+      </div>
+
+      <div className="mb-6">
+        <PushOptIn />
       </div>
 
       {children.length === 0 ? (
@@ -104,6 +109,17 @@ export default async function Dashboard() {
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2">
+                <form
+                  action={`/api/children/${c.id}/sick-today`}
+                  method="post"
+                >
+                  <button
+                    className="btn-danger py-1.5 px-3 text-sm"
+                    type="submit"
+                  >
+                    Heute krank
+                  </button>
+                </form>
                 <Link
                   href={`/dashboard/children/${c.id}/needs`}
                   className="btn-primary py-1.5 px-3 text-sm"
@@ -114,7 +130,7 @@ export default async function Dashboard() {
                   href={`/dashboard/children/${c.id}/absence`}
                   className="btn-secondary py-1.5 px-3 text-sm"
                 >
-                  Krankmelden / Abmelden
+                  Abmeldung (Zeitraum)
                 </Link>
                 <Link
                   href={`/dashboard/children/${c.id}/edit`}
