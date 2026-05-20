@@ -21,19 +21,79 @@ model User {
 }
 
 model Child {
-  id         String     @id @default(cuid())
+  id         String          @id @default(cuid())
   firstName  String
   lastName   String
   birthDate  DateTime?
   school     String
   grade      String
-  stopName   String?    // bevorzugte Bushaltestelle
+  stopName   String?         // bevorzugte Bushaltestelle
   notes      String?
-  parent     User       @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  parent     User            @relation(fields: [parentId], references: [id], onDelete: Cascade)
   parentId   String
   absences   Absence[]
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  needs      TransportNeed[]
+  specials   SpecialNeed[]
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+}
+
+// Regulaerer Wochen-Transportbedarf eines Kindes.
+// slot: MORNING (Hin zur Schule), NOON (Rueck Mittag), AFTERNOON (Rueck Nachmittag)
+// mode: BUS (faehrt regulaer) | NONE (faehrt nicht, z.B. Mittagstisch) | CUSTOM (Sonderzeit)
+model TransportNeed {
+  id         String   @id @default(cuid())
+  child      Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  childId    String
+  dayOfWeek  Int      // 1=Mo .. 5=Fr
+  slot       String
+  mode       String
+  customTime String?  // HH:MM, falls mode=CUSTOM
+  customStop String?  // abweichende Haltestelle
+  notes      String?
+  updatedAt  DateTime @updatedAt
+
+  @@unique([childId, dayOfWeek, slot])
+}
+
+// Spezial- / Projektwoche: ueberschreibt den regulaeren Plan fuer eine ISO-Woche.
+model SpecialWeek {
+  id          String        @id @default(cuid())
+  year        Int
+  weekNumber  Int           // ISO Woche 1..53
+  title       String
+  description String?
+  active      Boolean       @default(true)
+  overrides   SpecialNeed[]
+  createdAt   DateTime      @default(now())
+
+  @@unique([year, weekNumber])
+}
+
+model SpecialNeed {
+  id            String      @id @default(cuid())
+  specialWeek   SpecialWeek @relation(fields: [specialWeekId], references: [id], onDelete: Cascade)
+  specialWeekId String
+  child         Child       @relation(fields: [childId], references: [id], onDelete: Cascade)
+  childId       String
+  dayOfWeek     Int
+  slot          String
+  mode          String
+  customTime    String?
+  customStop    String?
+  notes         String?
+
+  @@unique([specialWeekId, childId, dayOfWeek, slot])
+}
+
+// Schulfreie Tage / Ferien: an diesen Tagen faehrt kein Bus.
+model SchoolHoliday {
+  id        String   @id @default(cuid())
+  name      String
+  fromDate  DateTime
+  toDate    DateTime
+  notes     String?
+  createdAt DateTime @default(now())
 }
 
 model Absence {

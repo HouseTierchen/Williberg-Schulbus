@@ -105,6 +105,12 @@ export default async function Dashboard() {
 
               <div className="mt-4 flex flex-wrap gap-2">
                 <Link
+                  href={`/dashboard/children/${c.id}/needs`}
+                  className="btn-primary py-1.5 px-3 text-sm"
+                >
+                  Wochen-Bedarf
+                </Link>
+                <Link
                   href={`/dashboard/children/${c.id}/absence`}
                   className="btn-secondary py-1.5 px-3 text-sm"
                 >

@@ -38,6 +38,11 @@ export default async function AdminHome() {
 
       <div className="mt-8 grid gap-4 md:grid-cols-3">
         <AdminCard
+          href="/admin/dayplan"
+          title="Tagesplan"
+          desc="Wer fährt heute wann? Inkl. Spezialwochen und Ferien."
+        />
+        <AdminCard
           href="/admin/plans"
           title="Schulpläne & KI"
           desc="Stundenpläne hochladen und durch KI auswerten lassen."
@@ -48,6 +53,16 @@ export default async function AdminHome() {
           desc="Linien, Haltestellen und Fahrten bearbeiten."
         />
         <AdminCard
+          href="/admin/specialweeks"
+          title="Spezialwochen"
+          desc="Projekt-/Sportwochen mit abweichendem Plan."
+        />
+        <AdminCard
+          href="/admin/holidays"
+          title="Ferien / schulfrei"
+          desc="Tage ohne Schulbus-Betrieb verwalten."
+        />
+        <AdminCard
           href="/admin/families"
           title="Familien & Kinder"
           desc="Übersicht aller Familien und gemeldeter Kinder."
@@ -55,7 +70,7 @@ export default async function AdminHome() {
         <AdminCard
           href="/admin/absences"
           title="Abmeldungen"
-          desc="Wer fährt heute nicht? Tagesliste."
+          desc="Wer ist krank gemeldet?"
         />
       </div>
     </div>
